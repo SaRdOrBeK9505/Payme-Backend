@@ -94,8 +94,8 @@ def check_ip_whitelist(request: Request) -> bool:
     """
     allowed_ips = settings.PAYME_ALLOWED_IPS
     
-    # Agar whitelist bo'sh ro'yxat bo'lsa, barcha IP'larga ruxsat
-    if not allowed_ips or len(allowed_ips) == 0:
+    # Agar whitelist bo'sh bo'lsa yoki birinchi element bo'sh bo'lsa, barcha IP'larga ruxsat
+    if not allowed_ips or not allowed_ips[0]:
         return True
     
     client_ip = get_client_ip(request)
@@ -103,7 +103,7 @@ def check_ip_whitelist(request: Request) -> bool:
     if client_ip in allowed_ips:
         return True
     
-    logger.warning(f"IP not in whitelist: {client_ip}. Allowed IPs: {allowed_ips}")
+    logger.warning(f"IP not in whitelist: {client_ip}")
     return False
 
 
@@ -114,6 +114,10 @@ def payme_webhook_auth(view_func):
     Bu decorator quyidagilarni tekshiradi:
     1. Basic Auth credentials (Paycom:PAYME_KEY)
     2. IP whitelist (agar settings'da belgilangan bo'lsa)
+    
+    MUHIM: Payme Merchant API protokoli bo'yicha, barcha javoblar
+    HTTP 200 status kodi bilan qaytarilishi kerak. Xatolar faqat
+    JSON tanasidagi "error" fieldi orqali bildiriladi.
     
     Args:
         view_func: View funksiyasi
@@ -134,7 +138,8 @@ def payme_webhook_auth(view_func):
                 },
                 "id": None
             }
-            return JsonResponse(error_response, status=403)
+            # MUHIM: HTTP 200 bilan qaytariladi (Payme protokoli talabi)
+            return JsonResponse(error_response, status=200)
         
         # Basic Auth tekshiruvi
         auth_header = request.META.get('HTTP_AUTHORIZATION', '')
@@ -149,7 +154,8 @@ def payme_webhook_auth(view_func):
                 },
                 "id": None
             }
-            return JsonResponse(error_response, status=401)
+            # MUHIM: HTTP 200 bilan qaytariladi (Payme protokoli talabi)
+            return JsonResponse(error_response, status=200)
         
         credentials = parse_basic_auth(auth_header)
         if not credentials:
@@ -162,7 +168,8 @@ def payme_webhook_auth(view_func):
                 },
                 "id": None
             }
-            return JsonResponse(error_response, status=401)
+            # MUHIM: HTTP 200 bilan qaytariladi (Payme protokoli talabi)
+            return JsonResponse(error_response, status=200)
         
         username, password = credentials
         if not verify_payme_credentials(username, password):
@@ -175,7 +182,8 @@ def payme_webhook_auth(view_func):
                 },
                 "id": None
             }
-            return JsonResponse(error_response, status=401)
+            # MUHIM: HTTP 200 bilan qaytariladi (Payme protokoli talabi)
+            return JsonResponse(error_response, status=200)
         
         # Barcha tekshiruvlar muvaffaqiyatli o'tdi
         return view_func(self, request, *args, **kwargs)
