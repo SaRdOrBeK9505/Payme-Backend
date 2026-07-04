@@ -45,23 +45,24 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
 
-    #packages
+    # Third party packages
     'rest_framework',
     'drf_spectacular',  # Swagger/OpenAPI documentation
+    'corsheaders',  # CORS support for frontend
 
-    #apps
+    # Local apps
     'payments',
 ]
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
+    'corsheaders.middleware.CorsMiddleware',  # CORS middleware (SecurityMiddleware'dan keyin)
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    'payments.middleware.PaymeRequestLoggingMiddleware',  # Payme so'rovlarini loglash
 ]
 
 # REST Framework settings
@@ -266,6 +267,53 @@ LOGGING = {
         'level': 'INFO',
     },
 }
+
+# ═══════════════════════════════════════════════════════════════════
+# CORS Configuration (Frontend Integration)
+# ═══════════════════════════════════════════════════════════════════
+
+# CORS allowed origins - .env dan olinadi
+CORS_ALLOWED_ORIGINS_RAW = config('CORS_ALLOWED_ORIGINS', default='')
+
+if DEBUG:
+    # Development muhitida barcha originlarga ruxsat
+    CORS_ALLOW_ALL_ORIGINS = True
+    CORS_ALLOW_CREDENTIALS = True
+else:
+    # Production muhitida faqat belgilangan originlar
+    CORS_ALLOW_ALL_ORIGINS = False
+    CORS_ALLOWED_ORIGINS = [
+        origin.strip() 
+        for origin in CORS_ALLOWED_ORIGINS_RAW.split(',') 
+        if origin.strip()
+    ]
+    CORS_ALLOW_CREDENTIALS = True
+
+# CORS Headers
+CORS_ALLOW_HEADERS = [
+    'accept',
+    'accept-encoding',
+    'authorization',
+    'content-type',
+    'dnt',
+    'origin',
+    'user-agent',
+    'x-csrftoken',
+    'x-requested-with',
+]
+
+# CORS Methods
+CORS_ALLOW_METHODS = [
+    'DELETE',
+    'GET',
+    'OPTIONS',
+    'PATCH',
+    'POST',
+    'PUT',
+]
+
+# Preflight request cache time (seconds)
+CORS_PREFLIGHT_MAX_AGE = 86400  # 24 hours
 
 
 

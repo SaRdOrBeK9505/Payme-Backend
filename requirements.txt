@@ -2,6 +2,9 @@
 Django>=4.2.0,<5.0.0
 djangorestframework>=3.14.0
 
+# CORS Headers (Frontend integration)
+django-cors-headers>=4.3.0
+
 # API Documentation (Swagger/OpenAPI)
 drf-spectacular>=0.27.0
 
