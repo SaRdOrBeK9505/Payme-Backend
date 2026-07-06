@@ -855,13 +855,19 @@ class PaymeWebhookView(APIView):
                     "Transaction not found"
                 )
             
+            # MUHIM: Firestore'dan olingan qiymatlarni to'g'ri formatda qaytarish
+            # Agar performTime/cancelTime None bo'lsa, 0 qaytarish kerak (Payme protokoli)
+            perform_time_value = transaction.get('performTime')
+            cancel_time_value = transaction.get('cancelTime')
+            reason_value = transaction.get('reason')
+            
             return {
                 "create_time": transaction['createTime'],
-                "perform_time": transaction.get('performTime', 0),
-                "cancel_time": transaction.get('cancelTime', 0),
+                "perform_time": perform_time_value if perform_time_value is not None else 0,
+                "cancel_time": cancel_time_value if cancel_time_value is not None else 0,
                 "transaction": transaction['id'],
                 "state": transaction['state'],
-                "reason": transaction.get('reason')
+                "reason": reason_value if reason_value is not None else None
             }
             
         except PaymeException:
