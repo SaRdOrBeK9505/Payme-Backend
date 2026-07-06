@@ -242,19 +242,26 @@ class TransactionService:
             raise
     
     @staticmethod
-    def get_transaction_by_order(order_id: str) -> Optional[Dict[str, Any]]:
+    def get_transaction_by_order(order_id: str, state: Optional[int] = None) -> Optional[Dict[str, Any]]:
         """
         Order ID bo'yicha tranzaksiyani qidiradi.
         
         Args:
             order_id: Order identifikatori
+            state: Tranzaksiya holati (ixtiyoriy). Agar berilmasa, barcha holatlar qidiriladi.
             
         Returns:
             Tranzaksiya ma'lumotlari yoki None (agar topilmasa)
         """
         try:
             transactions_ref = db.collection(FirestoreCollection.TRANSACTIONS)
-            query = transactions_ref.where('orderId', '==', order_id).limit(1)
+            query = transactions_ref.where('orderId', '==', order_id)
+            
+            # Agar state berilgan bo'lsa, uni ham filtrlash
+            if state is not None:
+                query = query.where('state', '==', state)
+            
+            query = query.limit(1)
             results = query.stream()
             
             for doc in results:

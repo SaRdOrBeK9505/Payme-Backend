@@ -553,6 +553,9 @@ class PaymeWebhookView(APIView):
         CreateTransaction metodi.
         Yangi tranzaksiya yaratadi va order statusini yangilaydi.
         
+        IDEMPOTENT: Bir xil transaction_id bilan qayta chaqirilsa, 
+        bazadagi mavjud tranzaksiyani qaytaradi.
+        
         Args:
             params: {
                 "id": "transaction_id",
@@ -577,11 +580,12 @@ class PaymeWebhookView(APIView):
                     "Missing required parameters"
                 )
             
-            # Tranzaksiya mavjudligini tekshirish
+            # IDEMPOTENTLIK: Tranzaksiya allaqachon mavjud bo'lsa, uni qaytarish
             existing_transaction = TransactionService.get_transaction(transaction_id)
             
             if existing_transaction:
-                # Tranzaksiya allaqachon mavjud - mavjud ma'lumotni qaytarish
+                # MUHIM: Bazadagi saqlangan qiymatlarni qaytarish (yangi hisoblamaslik!)
+                logger.info(f"Transaction already exists: {transaction_id}, returning existing data")
                 return {
                     "create_time": existing_transaction['createTime'],
                     "transaction": existing_transaction['id'],
@@ -596,6 +600,23 @@ class PaymeWebhookView(APIView):
                 raise PaymeException(
                     validation['error_code'],
                     validation['error_message']
+                )
+            
+            # MUHIM: Bir xil order uchun pending holatdagi boshqa tranzaksiya borligini tekshirish
+            # Payme protokoli: bir order uchun faqat BITTA pending tranzaksiya bo'lishi mumkin
+            pending_transaction = TransactionService.get_transaction_by_order(
+                order_id=order_id, 
+                state=TransactionState.CREATED
+            )
+            
+            if pending_transaction and pending_transaction['id'] != transaction_id:
+                # Boshqa pending tranzaksiya topildi - bu xato!
+                logger.warning(
+                    f"Order {order_id} already has pending transaction: {pending_transaction['id']}"
+                )
+                raise PaymeException(
+                    PaymeError.ORDER_HAS_PENDING_TRANSACTION,
+                    f"Order already has pending transaction: {pending_transaction['id']}"
                 )
             
             # Yangi tranzaksiya yaratish
@@ -613,6 +634,8 @@ class PaymeWebhookView(APIView):
                 status=OrderStatus.PROCESSING,
                 transaction_id=transaction_id
             )
+            
+            logger.info(f"New transaction created: {transaction_id} for order {order_id}")
             
             return {
                 "create_time": transaction['createTime'],
@@ -633,6 +656,9 @@ class PaymeWebhookView(APIView):
         """
         PerformTransaction metodi.
         Tranzaksiyani tasdiqlab, to'lovni amalga oshiradi.
+        
+        IDEMPOTENT: Agar tranzaksiya allaqachon perform qilingan bo'lsa,
+        bazadagi saqlangan performTime'ni qaytaradi (yangi vaqt hisoblamaydi).
         
         Args:
             params: {"id": "transaction_id"}
@@ -658,11 +684,12 @@ class PaymeWebhookView(APIView):
                     "Transaction not found"
                 )
             
-            # Agar allaqachon tasdiqlanган bo'lsa
+            # IDEMPOTENTLIK: Agar allaqachon tasdiqlanган bo'lsa, bazadan olingan vaqtni qaytarish
             if transaction['state'] == TransactionState.COMPLETED:
+                logger.info(f"Transaction already performed: {transaction_id}, returning existing data")
                 return {
                     "transaction": transaction['id'],
-                    "perform_time": transaction['performTime'],
+                    "perform_time": transaction['performTime'],  # BAZADAGI qiymat!
                     "state": transaction['state']
                 }
             
@@ -687,7 +714,7 @@ class PaymeWebhookView(APIView):
                     "Transaction timeout expired"
                 )
             
-            # Tranzaksiyani tasdiqash
+            # Tranzaksiyani tasdiqash (birinchi marta)
             perform_time = int(time.time() * 1000)
             TransactionService.perform_transaction(
                 transaction_id=transaction_id,
@@ -701,9 +728,11 @@ class PaymeWebhookView(APIView):
                 status=OrderStatus.PAID
             )
             
+            logger.info(f"Transaction performed successfully: {transaction_id}")
+            
             return {
                 "transaction": transaction_id,
-                "perform_time": perform_time,
+                "perform_time": perform_time,  # Yangi yaratilgan vaqt
                 "state": TransactionState.COMPLETED
             }
             
@@ -720,6 +749,9 @@ class PaymeWebhookView(APIView):
         """
         CancelTransaction metodi.
         Tranzaksiyani bekor qiladi va order holatini tiklaydi.
+        
+        IDEMPOTENT: Agar tranzaksiya allaqachon bekor qilingan bo'lsa,
+        bazadagi saqlangan cancelTime'ni qaytaradi (yangi vaqt hisoblamaydi).
         
         Args:
             params: {
@@ -749,15 +781,16 @@ class PaymeWebhookView(APIView):
                     "Transaction not found"
                 )
             
-            # Agar allaqachon bekor qilingan bo'lsa
+            # IDEMPOTENTLIK: Agar allaqachon bekor qilingan bo'lsa, bazadan olingan ma'lumotni qaytarish
             if transaction['state'] in [TransactionState.CANCELLED, TransactionState.CANCELLED_AFTER_COMPLETE]:
+                logger.info(f"Transaction already cancelled: {transaction_id}, returning existing data")
                 return {
                     "transaction": transaction['id'],
-                    "cancel_time": transaction['cancelTime'],
+                    "cancel_time": transaction['cancelTime'],  # BAZADAGI qiymat!
                     "state": transaction['state']
                 }
             
-            # Tranzaksiyani bekor qilish
+            # Tranzaksiyani bekor qilish (birinchi marta)
             cancel_time = int(time.time() * 1000)
             TransactionService.cancel_transaction(
                 transaction_id=transaction_id,
@@ -776,9 +809,11 @@ class PaymeWebhookView(APIView):
             # Yangi state'ni aniqlash
             new_state = TransactionState.CANCELLED_AFTER_COMPLETE if transaction['state'] == TransactionState.COMPLETED else TransactionState.CANCELLED
             
+            logger.info(f"Transaction cancelled successfully: {transaction_id}, reason: {reason}")
+            
             return {
                 "transaction": transaction_id,
-                "cancel_time": cancel_time,
+                "cancel_time": cancel_time,  # Yangi yaratilgan vaqt
                 "state": new_state
             }
             

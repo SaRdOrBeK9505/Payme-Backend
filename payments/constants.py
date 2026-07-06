@@ -32,6 +32,7 @@ class PaymeError:
     ORDER_NOT_FOUND = -31050
     ORDER_ALREADY_PAID = -31051
     ORDER_CANCELLED = -31008
+    ORDER_HAS_PENDING_TRANSACTION = -31099  # Order uchun pending tranzaksiya mavjud
     TRANSACTION_NOT_FOUND = -31003
     TRANSACTION_ALREADY_CANCELLED = -31007
     TRANSACTION_CANNOT_BE_CANCELLED = -31008
@@ -88,6 +89,11 @@ class PaymeError:
             "uz": "Buyurtma bekor qilingan",
             "en": "Order cancelled",
             "ru": "Заказ отменен"
+        },
+        ORDER_HAS_PENDING_TRANSACTION: {
+            "uz": "Buyurtma uchun kutilayotgan tranzaksiya mavjud",
+            "en": "Order has pending transaction",
+            "ru": "Заказ имеет ожидающую транзакцию"
         },
         TRANSACTION_NOT_FOUND: {
             "uz": "Tranzaksiya topilmadi",
