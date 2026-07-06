@@ -250,6 +250,11 @@ class PaymeWebhookView(APIView):
     - CheckTransaction
     """
     
+    # MUHIM: DRF'ning auto-authentication'ini o'chirish
+    # Barcha authentication decorator orqali qo'lda boshqariladi
+    authentication_classes = []
+    permission_classes = []
+    
     @extend_schema(
         tags=['Payme Webhook'],
         operation_id='payme_webhook',
@@ -852,28 +857,34 @@ class PaymeWebhookView(APIView):
         })
     
     @staticmethod
+    @staticmethod
     def _error_response(request_id: Any, code: int, message: str, 
                        data: Any = None) -> JsonResponse:
         """
         JSON-RPC 2.0 xato javobi yaratadi.
+        Payme protokoliga muvofiq 3 tilda xato xabarini qaytaradi.
         
         Args:
             request_id: So'rov ID'si
-            code: Xato kodi
-            message: Xato xabari
-            data: Qo'shimcha ma'lumotlar (ixtiyoriy)
+            code: Xato kodi (PaymeError.* konstantalaridan)
+            message: Qo'shimcha xato xabari (data field uchun)
+            data: Qo'shimcha ma'lumotlar (ixtiyoriy, agar berilmasa message ishlatiladi)
             
         Returns:
-            JSON response
+            JSON response (har doim HTTP 200 status bilan)
         """
         error_body = {
             "code": code,
-            "message": PaymeError.get_error_message(code, "en"),
-            "data": message
+            "message": {
+                "uz": PaymeError.get_error_message(code, "uz"),
+                "en": PaymeError.get_error_message(code, "en"),
+                "ru": PaymeError.get_error_message(code, "ru")
+            },
+            "data": data if data is not None else message
         }
         return JsonResponse({
             "jsonrpc": "2.0",
-            "id": request_id,
-            "error": error_body
-        })
+            "error": error_body,
+            "id": request_id
+        }, status=200)  # MUHIM: Har doim HTTP 200 qaytarish kerak!
 

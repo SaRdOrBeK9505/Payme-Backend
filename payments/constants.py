@@ -64,6 +64,11 @@ class PaymeError:
             "en": "Internal error",
             "ru": "Внутренняя ошибка"
         },
+        ACCESS_DENIED: {
+            "uz": "Metodni bajarish uchun huquq yetarli emas",
+            "en": "Insufficient privilege to execute method",
+            "ru": "Недостаточно привилегий для выполнения метода"
+        },
         INCORRECT_AMOUNT: {
             "uz": "Noto'g'ri summa",
             "en": "Incorrect amount",

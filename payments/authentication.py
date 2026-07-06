@@ -133,8 +133,12 @@ def payme_webhook_auth(view_func):
                 "jsonrpc": "2.0",
                 "error": {
                     "code": PaymeError.ACCESS_DENIED,
-                    "message": PaymeError.get_error_message(PaymeError.ACCESS_DENIED, "en"),
-                    "data": "Access denied: IP not in whitelist"
+                    "message": {
+                        "uz": PaymeError.get_error_message(PaymeError.ACCESS_DENIED, "uz"),
+                        "en": PaymeError.get_error_message(PaymeError.ACCESS_DENIED, "en"),
+                        "ru": PaymeError.get_error_message(PaymeError.ACCESS_DENIED, "ru")
+                    },
+                    "data": "IP not in whitelist"
                 },
                 "id": None
             }
@@ -149,7 +153,11 @@ def payme_webhook_auth(view_func):
                 "jsonrpc": "2.0",
                 "error": {
                     "code": PaymeError.ACCESS_DENIED,
-                    "message": PaymeError.get_error_message(PaymeError.ACCESS_DENIED, "en"),
+                    "message": {
+                        "uz": PaymeError.get_error_message(PaymeError.ACCESS_DENIED, "uz"),
+                        "en": PaymeError.get_error_message(PaymeError.ACCESS_DENIED, "en"),
+                        "ru": PaymeError.get_error_message(PaymeError.ACCESS_DENIED, "ru")
+                    },
                     "data": "Authorization header is missing"
                 },
                 "id": None
@@ -163,7 +171,11 @@ def payme_webhook_auth(view_func):
                 "jsonrpc": "2.0",
                 "error": {
                     "code": PaymeError.ACCESS_DENIED,
-                    "message": PaymeError.get_error_message(PaymeError.ACCESS_DENIED, "en"),
+                    "message": {
+                        "uz": PaymeError.get_error_message(PaymeError.ACCESS_DENIED, "uz"),
+                        "en": PaymeError.get_error_message(PaymeError.ACCESS_DENIED, "en"),
+                        "ru": PaymeError.get_error_message(PaymeError.ACCESS_DENIED, "ru")
+                    },
                     "data": "Invalid authorization header format"
                 },
                 "id": None
@@ -177,8 +189,12 @@ def payme_webhook_auth(view_func):
                 "jsonrpc": "2.0",
                 "error": {
                     "code": PaymeError.ACCESS_DENIED,
-                    "message": PaymeError.get_error_message(PaymeError.ACCESS_DENIED, "en"),
-                    "data": "Invalid credentials"
+                    "message": {
+                        "uz": PaymeError.get_error_message(PaymeError.ACCESS_DENIED, "uz"),
+                        "en": PaymeError.get_error_message(PaymeError.ACCESS_DENIED, "en"),
+                        "ru": PaymeError.get_error_message(PaymeError.ACCESS_DENIED, "ru")
+                    },
+                    "data": "Invalid username or password"
                 },
                 "id": None
             }
